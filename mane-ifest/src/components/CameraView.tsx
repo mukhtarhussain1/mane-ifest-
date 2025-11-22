@@ -193,16 +193,16 @@ export const CameraView: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black z-50 flex flex-col items-center justify-center overflow-hidden">
+    <div className="fixed inset-0 bg-black z-50 flex flex-col items-center justify-center overflow-hidden safe-area-inset">
       {/* Header */}
-      <div className="absolute top-0 left-0 right-0 p-6 flex justify-between items-center z-10">
+      <div className="absolute top-0 left-0 right-0 p-4 sm:p-6 pt-safe-top flex justify-between items-center z-10">
         <button 
           onClick={handleClose}
-          className="p-2 rounded-full bg-black/20 backdrop-blur-md text-white hover:bg-black/40 transition-colors"
+          className="p-3 sm:p-2 rounded-full bg-black/30 backdrop-blur-md text-white hover:bg-black/50 active:scale-95 transition-all min-w-[44px] min-h-[44px] flex items-center justify-center"
         >
           <X size={24} />
         </button>
-        <div className="text-white/80 text-sm font-medium tracking-wide uppercase">
+        <div className="text-white/90 text-sm sm:text-base font-semibold tracking-wide uppercase">
           {tempImage ? "Review Photo" : "Align Your Face"}
         </div>
         <div className="w-10" /> {/* Spacer */}
@@ -253,15 +253,15 @@ export const CameraView: React.FC = () => {
         )}
       </div>
 
-      {/* Controls */}
-      <div className="absolute bottom-0 left-0 right-0 p-10 flex justify-center items-center pb-16 bg-gradient-to-t from-black/80 to-transparent">
+      {/* Controls with safe area */}
+      <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-10 flex justify-center items-center pb-safe-bottom bg-gradient-to-t from-black/90 to-transparent">
         {tempImage ? (
           <div className="flex gap-8">
              <button
               onClick={handleRetake}
-              className="flex flex-col items-center gap-2 text-white/80 hover:text-white transition-colors"
+              className="flex flex-col items-center gap-2 sm:gap-3 text-white/80 hover:text-white transition-colors active:scale-95 min-w-[80px]"
             >
-              <div className="w-14 h-14 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20">
+              <div className="w-16 h-16 sm:w-14 sm:h-14 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20 hover:bg-white/20 transition-all">
                 <RotateCcw size={24} />
               </div>
               <span className="text-xs font-medium uppercase tracking-wider">Retake</span>
@@ -269,10 +269,10 @@ export const CameraView: React.FC = () => {
             
             <button
               onClick={handleConfirm}
-              className="flex flex-col items-center gap-2 text-cyan-400 hover:text-cyan-300 transition-colors"
+              className="flex flex-col items-center gap-2 sm:gap-3 text-cyan-400 hover:text-cyan-300 transition-colors active:scale-95 min-w-[80px]"
             >
-              <div className="w-16 h-16 rounded-full bg-cyan-500/20 backdrop-blur-md flex items-center justify-center border border-cyan-500/50 shadow-[0_0_20px_rgba(6,182,212,0.3)]">
-                <Check size={32} />
+              <div className="w-20 h-20 sm:w-16 sm:h-16 rounded-full bg-cyan-500/20 backdrop-blur-md flex items-center justify-center border-2 border-cyan-500/50 shadow-[0_0_25px_rgba(6,182,212,0.4)] hover:shadow-[0_0_35px_rgba(6,182,212,0.6)] transition-all">
+                <Check size={36} className="sm:size-32" />
               </div>
               <span className="text-xs font-medium uppercase tracking-wider">Use Photo</span>
             </button>
@@ -280,7 +280,7 @@ export const CameraView: React.FC = () => {
         ) : (
           <button
             onClick={captureImage}
-            className={`w-20 h-20 rounded-full border-4 flex items-center justify-center backdrop-blur-sm transition-all active:scale-95 ${isAligned ? 'border-green-400 bg-green-400/20' : 'border-white bg-white/20 hover:bg-white/40'}`}
+            className={`w-20 h-20 sm:w-20 sm:h-20 rounded-full border-4 flex items-center justify-center backdrop-blur-sm transition-all active:scale-95 ${isAligned ? 'border-green-400 bg-green-400/20 shadow-[0_0_30px_rgba(74,222,128,0.4)]' : 'border-white bg-white/20 hover:bg-white/30'}`}
           >
             <div className={`w-16 h-16 rounded-full transition-colors ${isAligned ? 'bg-green-400' : 'bg-white'}`} />
           </button>

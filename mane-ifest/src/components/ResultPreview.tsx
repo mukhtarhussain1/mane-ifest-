@@ -45,12 +45,12 @@ export const ResultPreview: React.FC = () => {
   const selectedStyleName = analysisResult?.recommendations.find(r => r.id === selectedHairstyleId)?.name;
 
   return (
-    <div className="fixed inset-0 bg-black flex flex-col font-sans">
-      {/* Header - Minimalist */}
-      <div className="absolute top-0 left-0 right-0 p-4 pt-12 flex justify-between items-center z-20 bg-gradient-to-b from-black/60 to-transparent">
+    <div className="fixed inset-0 bg-black flex flex-col font-sans safe-area-inset">
+      {/* Header - Minimalist with safe area */}
+      <div className="absolute top-0 left-0 right-0 p-4 pt-safe-top sm:pt-12 flex justify-between items-center z-20 bg-gradient-to-b from-black/80 to-transparent backdrop-blur-sm">
         <button 
           onClick={() => setStep('camera')}
-          className="p-2 rounded-full bg-black/20 backdrop-blur-md border border-white/10 text-white hover:bg-black/40 transition-all"
+          className="p-3 sm:p-2 rounded-full bg-black/30 backdrop-blur-md border border-white/10 text-white hover:bg-black/50 active:scale-95 transition-all min-w-[44px] min-h-[44px] flex items-center justify-center"
         >
           <ArrowLeft size={24} />
         </button>
@@ -63,7 +63,7 @@ export const ResultPreview: React.FC = () => {
                 onMouseUp={() => setShowOriginal(false)}
                 onTouchStart={() => setShowOriginal(true)}
                 onTouchEnd={() => setShowOriginal(false)}
-                className="p-2 rounded-full bg-black/20 backdrop-blur-md border border-white/10 text-white hover:bg-black/40 hover:scale-110 active:scale-95 transition-all duration-300 select-none"
+                className="p-3 sm:p-2 rounded-full bg-black/30 backdrop-blur-md border border-white/10 text-white hover:bg-black/50 hover:scale-110 active:scale-95 transition-all duration-300 select-none min-w-[44px] min-h-[44px] flex items-center justify-center"
                 title="Hold to Compare"
               >
                 <span className="font-bold text-xs px-1">ORIG</span>
@@ -168,7 +168,7 @@ export const ResultPreview: React.FC = () => {
         
         {/* Generation Button - Positioned higher to avoid overlap with selector */}
         {!isGenerating && !generatedResult && selectedHairstyleId && (
-          <div className="absolute bottom-32 left-0 right-0 flex justify-center z-30 px-6">
+          <div className="absolute bottom-5 left-0 right-0 flex justify-center z-30 px-6">
             <button 
               onClick={handleGenerate}
               className="w-full max-w-xs group flex items-center justify-center gap-3 px-8 py-4 bg-white text-black font-bold rounded-full shadow-[0_0_40px_rgba(255,255,255,0.3)] hover:scale-105 transition-all active:scale-95"
