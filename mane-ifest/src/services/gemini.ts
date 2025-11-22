@@ -122,7 +122,7 @@ export const generateHairstyleDetails = async (
     // Generate Image using Pollinations.ai
     // Construct a detailed prompt for the image generator
     const imagePrompt = encodeURIComponent(
-      `photorealistic portrait of a ${analysis.ageApprox} year old ${analysis.gender} with ${analysis.skinTone} skin and ${hairstyleName} hairstyle, ${analysis.hairColor} hair, professional photography, high quality, 8k, sharp focus, studio lighting, looking at camera`
+      `photorealistic portrait of a ${analysis.ageApprox} year old ${analysis.gender} with ${analysis.skinTone} skin and ${analysis.hairColor} hair, wearing ${hairstyleName} hairstyle, looking directly at camera, neutral expression, high quality, 8k, sharp focus, studio lighting, cinematic, detailed texture`
     );
     
     const imageUrl = `https://image.pollinations.ai/prompt/${imagePrompt}?nologo=true&private=true&enhanced=true`;
