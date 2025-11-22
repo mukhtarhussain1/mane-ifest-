@@ -4,6 +4,8 @@ import { ArrowLeft, Share2, Download, Wand2, Sparkles, ChevronUp } from 'lucide-
 import { HairstyleSelector } from './HairstyleSelector';
 import { generateHairstyleDetails } from '../services/gemini';
 
+import { LoadingMessages } from './LoadingMessages';
+
 export const ResultPreview: React.FC = () => {
   const { capturedImage, setStep, selectedHairstyleId, analysisResult, generatedResult, setGeneratedResult } = useAppStore();
   const [isGenerating, setIsGenerating] = useState(false);
@@ -82,7 +84,7 @@ export const ResultPreview: React.FC = () => {
             </div>
             <div className="mt-6 text-center space-y-2">
               <div className="text-2xl font-bold text-white tracking-wider uppercase animate-pulse">Crafting Look</div>
-              <div className="text-cyan-400/80 text-sm font-mono">Consulting AI Stylist...</div>
+              <LoadingMessages />
             </div>
           </div>
         )}

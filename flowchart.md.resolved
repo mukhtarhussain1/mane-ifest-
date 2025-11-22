@@ -1,0 +1,66 @@
+# Application Flow Chart
+
+```mermaid
+graph TD
+    Start([User Opens App]) --> Welcome[WelcomeScreen]
+    
+    subgraph Home ["Home Step"]
+        Welcome -->|Click 'Start Transformation'| SetStepCamera["setStep('camera')"]
+    end
+    
+    SetStepCamera --> Camera[CameraView]
+    
+    subgraph CameraStep ["Camera Step"]
+        Camera -->|User Captures Photo| Capture[Handle Capture]
+        Capture --> SetImage[setCapturedImage]
+        SetImage --> SetStepAnalyzing["setStep('analyzing')"]
+    end
+    
+    SetStepAnalyzing --> Analyzing[AnalysisOverlay]
+    
+    subgraph AnalyzingStep ["Analyzing Step"]
+        Analyzing -->|useEffect| CallGemini[analyzeFaceWithGemini]
+        CallGemini -->|Gemini API| GeminiAnalysis{Gemini Analysis}
+        GeminiAnalysis -->|Success| SetAnalysis[setAnalysisResult]
+        SetAnalysis --> SetStepResults["setStep('results')"]
+        GeminiAnalysis -->|Error| ShowError[Show Error & Retry]
+    end
+    
+    SetStepResults --> Results[ResultPreview]
+    
+    subgraph ResultsStep ["Results Step"]
+        Results -->|Show Captured Image| DisplayCapture[Display Captured Image]
+        Results -->|Select Hairstyle| SelectStyle[HairstyleSelector]
+        SelectStyle --> SetStyle[setSelectedHairstyleId]
+        SetStyle -->|Click 'GENERATE LOOK'| Generate[handleGenerate]
+        
+        Generate --> CallGenDetails[generateHairstyleDetails]
+        CallGenDetails -->|Gemini API| GeminiExplain{Get Explanation}
+        CallGenDetails -->|Gemini API| GenImage{Generate Image}
+        
+        GeminiExplain --> SetGenResult[setGeneratedResult]
+        GenImage --> SetGenResult
+        SetGenResult --> ShowResult[Show Generated Image & Explanation]
+        
+        ShowResult -->|Close Details| ViewImage[View Full Image]
+        ViewImage -->|Back/Retry| SetStepCamera
+    end
+```
+
+## Flow Description
+
+1.  **Initialization**: User starts at [WelcomeScreen](file:///Users/bukhtyarhaider/Projects/Startups/MyIdeas/mane-ifest-/mane-ifest/src/components/WelcomeScreen.tsx#5-52).
+2.  **Capture**: User moves to [CameraView](file:///Users/bukhtyarhaider/Projects/Startups/MyIdeas/mane-ifest-/mane-ifest/src/components/CameraView.tsx#5-122) to take a photo.
+3.  **Analysis**:
+    - App moves to [AnalysisOverlay](file:///Users/bukhtyarhaider/Projects/Startups/MyIdeas/mane-ifest-/mane-ifest/src/components/AnalysisOverlay.tsx#6-85).
+    - [analyzeFaceWithGemini](file:///Users/bukhtyarhaider/Projects/Startups/MyIdeas/mane-ifest-/mane-ifest/src/services/gemini.ts#25-87) is called.
+    - Gemini API analyzes face shape, gender, etc., and suggests hairstyles.
+    - Results are stored in `analysisResult`.
+4.  **Selection & Generation**:
+    - User sees [ResultPreview](file:///Users/bukhtyarhaider/Projects/Startups/MyIdeas/mane-ifest-/mane-ifest/src/components/ResultPreview.tsx#7-165) with their original photo.
+    - User selects a recommended hairstyle.
+    - User clicks "Generate".
+    - [generateHairstyleDetails](file:///Users/bukhtyarhaider/Projects/Startups/MyIdeas/mane-ifest-/mane-ifest/src/services/gemini.ts#93-142) is called.
+        - Gemini provides a detailed explanation.
+        - Gemini generates a new image with the selected hairstyle, using the original image as context.
+    - The new image and explanation are displayed.

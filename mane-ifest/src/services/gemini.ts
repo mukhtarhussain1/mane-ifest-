@@ -1,4 +1,5 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { editImageWithOpenAI } from './openai';
 
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 
@@ -99,43 +100,48 @@ export const generateHairstyleDetails = async (
     throw new Error("Gemini API Key is missing.");
   }
 
+  // Use Gemini for the explanation
   const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
   const prompt = `
-    I have a user with a ${analysis.faceShape} face shape. They have selected the "${hairstyleName}" hairstyle.
+    You are an expert hair stylist.
+    I have a user with a ${analysis.faceShape} face shape.
+    They have selected the "${hairstyleName}" hairstyle.
     
-    1. Explain specifically WHY this hairstyle looks good on a ${analysis.faceShape} face. Mention features like jawline, forehead, or cheekbones.
-    2. Keep the tone exciting, professional, and encouraging.
-    3. Return the response in this JSON format ONLY:
-    {
-      "explanation": "Your detailed explanation here..."
-    }
+    Provide a brief, exciting explanation of why the "${hairstyleName}" hairstyle suits them.
+    Mention features like jawline, forehead, or cheekbones.
+    Keep the tone professional and encouraging.
+    Return ONLY the explanation text.
   `;
 
   try {
+    // 1. Get Explanation from Gemini
     const result = await model.generateContent(prompt);
     const response = await result.response;
-    const text = response.text();
-    const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
-    const json = JSON.parse(cleanText);
+    const explanationText = response.text();
 
-    // Generate Image using Pollinations.ai
-    // Construct a detailed prompt for the image generator
-    const imagePrompt = encodeURIComponent(
-      `photorealistic portrait of a ${analysis.ageApprox} year old ${analysis.gender} with ${analysis.skinTone} skin and ${analysis.hairColor} hair, wearing ${hairstyleName} hairstyle, looking directly at camera, neutral expression, high quality, 8k, sharp focus, studio lighting, cinematic, detailed texture`
-    );
+    // 2. Edit Image using OpenAI (DALL-E 2)
+    const generatedImage = await editImageWithOpenAI(originalImageBase64, hairstyleName, analysis);
+
+    if (generatedImage) {
+      return {
+        image: generatedImage,
+        explanation: explanationText.trim()
+      };
+    }
     
-    const imageUrl = `https://image.pollinations.ai/prompt/${imagePrompt}?nologo=true&private=true&enhanced=true`;
-
+    // Fallback if OpenAI generation fails
+    console.warn("OpenAI did not return an image.");
     return {
-      image: imageUrl,
-      explanation: json.explanation
+      image: originalImageBase64,
+      explanation: explanationText.trim() || "Could not generate the image, but here is the explanation."
     };
+
   } catch (error) {
     console.error("Generation Error:", error);
     return {
       image: originalImageBase64,
-      explanation: `This style is a great choice for your ${analysis.faceShape} face shape! It helps balance your features and highlights your best angles.`
+      explanation: `This style is a great choice for your ${analysis.faceShape} face shape! It helps balance your features.`
     };
   }
 };
