@@ -10,6 +10,7 @@ export const ResultPreview: React.FC = () => {
   const { capturedImage, setStep, selectedHairstyleId, analysisResult, generatedResult, setGeneratedResult } = useAppStore();
   const [isGenerating, setIsGenerating] = useState(false);
   const [showDetailsSheet, setShowDetailsSheet] = useState(false);
+  const [showOriginal, setShowOriginal] = useState(false); // For comparison
 
   // Reset generated result when selection changes
   useEffect(() => {
@@ -56,10 +57,67 @@ export const ResultPreview: React.FC = () => {
         <div className="flex gap-3">
           {generatedResult && (
             <>
-              <button className="p-2 rounded-full bg-black/20 backdrop-blur-md border border-white/10 text-white hover:bg-black/40 transition-all">
+              {/* Compare Button */}
+              <button 
+                onMouseDown={() => setShowOriginal(true)}
+                onMouseUp={() => setShowOriginal(false)}
+                onTouchStart={() => setShowOriginal(true)}
+                onTouchEnd={() => setShowOriginal(false)}
+                className="p-2 rounded-full bg-black/20 backdrop-blur-md border border-white/10 text-white hover:bg-black/40 hover:scale-110 active:scale-95 transition-all duration-300 select-none"
+                title="Hold to Compare"
+              >
+                <span className="font-bold text-xs px-1">ORIG</span>
+              </button>
+
+              <button 
+                onClick={() => {
+                  if (generatedResult.image) {
+                    const link = document.createElement('a');
+                    link.href = generatedResult.image;
+                    link.download = `mane-ifest-${Date.now()}.png`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                  }
+                }}
+                className="p-2 rounded-full bg-black/20 backdrop-blur-md border border-white/10 text-white hover:bg-black/40 hover:scale-110 active:scale-95 transition-all duration-300"
+                title="Download Image"
+              >
                 <Download size={24} />
               </button>
-              <button className="p-2 rounded-full bg-black/20 backdrop-blur-md border border-white/10 text-white hover:bg-black/40 transition-all">
+              <button 
+                onClick={async () => {
+                  if (generatedResult.image) {
+                    try {
+                      // Convert base64 to blob for sharing
+                      const response = await fetch(generatedResult.image);
+                      const blob = await response.blob();
+                      const file = new File([blob], 'mane-ifest-style.png', { type: 'image/png' });
+
+                      if (navigator.share) {
+                        await navigator.share({
+                          title: 'My New Look with Mane-ifest',
+                          text: `Check out this ${selectedStyleName} hairstyle!`,
+                          files: [file]
+                        });
+                      } else {
+                        // Fallback: Copy to clipboard or just alert
+                        // For simplicity in this demo:
+                        alert("Sharing is not supported on this device/browser. Image downloaded instead.");
+                        // Trigger download as fallback
+                        const link = document.createElement('a');
+                        link.href = generatedResult.image;
+                        link.download = `mane-ifest-${Date.now()}.png`;
+                        link.click();
+                      }
+                    } catch (error) {
+                      console.error("Error sharing:", error);
+                    }
+                  }
+                }}
+                className="p-2 rounded-full bg-black/20 backdrop-blur-md border border-white/10 text-white hover:bg-black/40 hover:scale-110 active:scale-95 transition-all duration-300"
+                title="Share Look"
+              >
                 <Share2 size={24} />
               </button>
             </>
@@ -67,12 +125,19 @@ export const ResultPreview: React.FC = () => {
         </div>
       </div>
 
-      {/* Main Image Area - Full Screen */}
-      <div className="relative flex-1 w-full h-full bg-gray-900">
+      {/* Main Image Area - Full Screen with Blurred Background for "Fit" effect */}
+      <div className="relative flex-1 w-full h-full bg-gray-900 overflow-hidden">
+        {/* Blurred Background Layer */}
+        <div 
+          className="absolute inset-0 bg-cover bg-center blur-3xl opacity-50 scale-110"
+          style={{ backgroundImage: `url(${showOriginal ? capturedImage : (generatedResult?.image || capturedImage)})` }}
+        />
+        
+        {/* Main Image - Contain to prevent cropping */}
         <img 
-          src={generatedResult?.image || capturedImage} 
+          src={showOriginal ? capturedImage : (generatedResult?.image || capturedImage)} 
           alt="Result" 
-          className={`w-full h-full object-cover transition-all duration-700 ${isGenerating ? 'scale-105 blur-lg opacity-50' : 'scale-100 opacity-100'}`}
+          className={`relative w-full h-full object-contain z-10 transition-all duration-700 ${isGenerating ? 'scale-105 blur-lg opacity-50' : 'scale-100 opacity-100'}`}
         />
         
         {/* Loading State */}
@@ -101,9 +166,9 @@ export const ResultPreview: React.FC = () => {
           </div>
         )}
         
-        {/* Generation Button */}
+        {/* Generation Button - Positioned higher to avoid overlap with selector */}
         {!isGenerating && !generatedResult && selectedHairstyleId && (
-          <div className="absolute bottom-24 left-0 right-0 flex justify-center z-30 px-6">
+          <div className="absolute bottom-32 left-0 right-0 flex justify-center z-30 px-6">
             <button 
               onClick={handleGenerate}
               className="w-full max-w-xs group flex items-center justify-center gap-3 px-8 py-4 bg-white text-black font-bold rounded-full shadow-[0_0_40px_rgba(255,255,255,0.3)] hover:scale-105 transition-all active:scale-95"
@@ -155,8 +220,8 @@ export const ResultPreview: React.FC = () => {
         </div>
       )}
 
-      {/* Selector Sheet - Only visible if not generating and no result yet (or minimized) */}
-      {!generatedResult && (
+      {/* Selector Sheet - Only visible if not generating and no result yet */}
+      {!generatedResult && !isGenerating && (
         <div className="absolute bottom-0 left-0 right-0 z-20">
           <HairstyleSelector />
         </div>
