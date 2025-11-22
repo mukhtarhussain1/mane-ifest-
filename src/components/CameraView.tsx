@@ -230,16 +230,31 @@ export const CameraView: React.FC = () => {
               className="w-full h-full object-cover transform -scale-x-100" // Mirror effect
             />
             
-            {/* Face Guide Overlay */}
-            <div className={`absolute inset-0 pointer-events-none flex items-center justify-center transition-colors duration-300 ${isAligned ? 'text-green-400' : 'text-white'}`}>
-              <svg viewBox="0 0 100 100" className="w-full md:w-[60%] h-[85%] opacity-60 stroke-current stroke-[0.5] fill-none transition-all duration-300">
-                {/* Simple oval shape for face guide */}
-                <ellipse cx="50" cy="50" rx="35" ry="45" strokeDasharray="4 2" className={isAligned ? "stroke-[1]" : ""} />
-                {/* Crosshair for eyes/nose alignment */}
-                <line x1="50" y1="20" x2="50" y2="80" strokeDasharray="2 2" />
-                <line x1="30" y1="45" x2="70" y2="45" strokeDasharray="2 2" />
-              </svg>
-            </div>
+           {/* Face Guide Overlay */}
+<div
+  className={`absolute inset-0 pointer-events-none flex items-center justify-center transition-colors duration-300 ${
+    isAligned ? 'text-green-400' : 'text-white'
+  }`}
+>
+  <svg
+    viewBox="0 0 100 100"
+    className="w-[90%] h-[70%] md:w-[40%] md:h-[50%] lg:w-[35%] lg:h-[45%] opacity-60 stroke-current stroke-[0.5] fill-none transition-all duration-300"
+  >
+    {/* Simple oval shape for face guide */}
+    <ellipse
+      cx="50"
+      cy="50"
+      rx="35"
+      ry="45"
+      strokeDasharray="4 2"
+      className={isAligned ? 'stroke-[1]' : ''}
+    />
+    {/* Crosshair for eyes/nose alignment */}
+    <line x1="50" y1="20" x2="50" y2="80" strokeDasharray="2 2" />
+    <line x1="30" y1="45" x2="70" y2="45" strokeDasharray="2 2" />
+  </svg>
+</div>
+
 
             {/* Countdown Overlay */}
             {countdown && (
