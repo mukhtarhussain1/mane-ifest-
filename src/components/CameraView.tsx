@@ -8,16 +8,18 @@ export const CameraView: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [tempImage, setTempImage] = useState<string | null>(null); // For review screen
+  const [tempImage, setTempImage] = useState<string | null>(null);
   const [isAligned, setIsAligned] = useState(false);
   const [countdown, setCountdown] = useState<number | null>(null);
+  const [flash, setFlash] = useState(false);
   const { setCapturedImage, setStep } = useAppStore();
   
   // Face Detection Refs
   const faceDetectorRef = useRef<FaceDetector | null>(null);
   const lastVideoTimeRef = useRef<number>(-1);
   const requestRef = useRef<number>(0);
-  const alignmentFramesRef = useRef<number>(0); // Count frames where face is aligned
+  const alignmentFramesRef = useRef<number>(0);
+  const lastDetectionTimeRef = useRef<number>(0);
 
   // Initialize Face Detector
   useEffect(() => {
@@ -42,6 +44,10 @@ export const CameraView: React.FC = () => {
 
   const captureImage = useCallback(() => {
     if (videoRef.current && canvasRef.current) {
+      // Trigger Flash
+      setFlash(true);
+      setTimeout(() => setFlash(false), 150);
+
       const video = videoRef.current;
       const canvas = canvasRef.current;
       const context = canvas.getContext('2d');
@@ -57,9 +63,12 @@ export const CameraView: React.FC = () => {
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
         
         const imageData = canvas.toDataURL('image/png');
-        setTempImage(imageData); // Show review screen
         
-        // Stop detection loop
+        // Small delay to let flash finish before showing preview
+        setTimeout(() => {
+          setTempImage(imageData);
+        }, 100);
+        
         if (requestRef.current) {
           cancelAnimationFrame(requestRef.current);
         }
@@ -72,18 +81,23 @@ export const CameraView: React.FC = () => {
     if (!faceDetectorRef.current || !videoRef.current || tempImage) return;
 
     const video = videoRef.current;
+    const now = performance.now();
+
+    // Throttle detection to ~10fps (every 100ms) to save battery
+    if (now - lastDetectionTimeRef.current < 100) {
+      requestRef.current = requestAnimationFrame(detectFace);
+      return;
+    }
+    lastDetectionTimeRef.current = now;
+
     if (video.currentTime !== lastVideoTimeRef.current) {
       lastVideoTimeRef.current = video.currentTime;
       
-      const detections = faceDetectorRef.current.detectForVideo(video, performance.now());
+      const detections = faceDetectorRef.current.detectForVideo(video, now);
       
       if (detections.detections.length > 0) {
         const face = detections.detections[0].boundingBox;
         
-        // Simple Alignment Logic
-        // Check if face is roughly centered and takes up a good portion of the frame
-        // Note: Bounding box is normalized 0-1 if configured, but here it's in pixels.
-        // We need relative coordinates.
         const vWidth = video.videoWidth;
         const vHeight = video.videoHeight;
         
@@ -91,18 +105,15 @@ export const CameraView: React.FC = () => {
           const faceCenterX = face.originX + face.width / 2;
           const faceCenterY = face.originY + face.height / 2;
           
-          // Center of frame (mirrored, so X is inverted logic but center is center)
           const frameCenterX = vWidth / 2;
           const frameCenterY = vHeight / 2;
           
-          // Tolerances
-          const xTol = vWidth * 0.15; // 15% tolerance
+          const xTol = vWidth * 0.15;
           const yTol = vHeight * 0.15;
           
           const isCenteredX = Math.abs(faceCenterX - frameCenterX) < xTol;
           const isCenteredY = Math.abs(faceCenterY - frameCenterY) < yTol;
           
-          // Size check: Face should be at least 20% of width but not more than 80%
           const faceRatio = face.width / vWidth;
           const isGoodSize = faceRatio > 0.2 && faceRatio < 0.8;
 
@@ -110,18 +121,20 @@ export const CameraView: React.FC = () => {
             setIsAligned(true);
             alignmentFramesRef.current += 1;
             
-            // If aligned for ~30 frames (approx 1 sec), trigger capture
-            if (alignmentFramesRef.current === 30) {
+            // Auto-capture logic
+            if (alignmentFramesRef.current === 30) { // ~3 seconds of alignment (at 10fps)
                setCountdown(3);
             } else if (alignmentFramesRef.current > 30) {
-               // Countdown logic handled by effect or just instant?
-               // Let's do a quick countdown effect in UI then capture
-               if (alignmentFramesRef.current === 60) setCountdown(2);
-               if (alignmentFramesRef.current === 90) setCountdown(1);
-               if (alignmentFramesRef.current === 120) {
+               // Countdown logic
+               // Since we throttled to 10fps, 10 frames = 1 second
+               const framesSinceTrigger = alignmentFramesRef.current - 30;
+               
+               if (framesSinceTrigger === 10) setCountdown(2);
+               if (framesSinceTrigger === 20) setCountdown(1);
+               if (framesSinceTrigger === 30) {
                  setCountdown(null);
                  captureImage();
-                 alignmentFramesRef.current = 0; // Reset
+                 alignmentFramesRef.current = 0;
                }
             }
           } else {
@@ -185,7 +198,6 @@ export const CameraView: React.FC = () => {
     setIsAligned(false);
     setCountdown(null);
     alignmentFramesRef.current = 0;
-    // Re-trigger camera start via effect dependency
   };
 
   const handleClose = () => {
@@ -194,6 +206,9 @@ export const CameraView: React.FC = () => {
 
   return (
     <div className="fixed inset-0 bg-black z-50 flex flex-col items-center justify-center overflow-hidden safe-area-inset">
+      {/* Flash Overlay */}
+      <div className={`absolute inset-0 bg-white z-[60] pointer-events-none transition-opacity duration-150 ${flash ? 'opacity-100' : 'opacity-0'}`} />
+
       {/* Header */}
       <div className="absolute top-0 left-0 right-0 p-4 sm:p-6 pt-safe-top flex justify-between items-center z-10">
         <button 
@@ -205,7 +220,7 @@ export const CameraView: React.FC = () => {
         <div className="text-white/90 text-sm sm:text-base font-semibold tracking-wide uppercase">
           {tempImage ? "Review Photo" : "Align Your Face"}
         </div>
-        <div className="w-10" /> {/* Spacer */}
+        <div className="w-10" />
       </div>
 
       {/* Camera Feed / Review Image */}
@@ -227,38 +242,42 @@ export const CameraView: React.FC = () => {
               autoPlay
               playsInline
               muted
-              className="w-full h-full object-cover transform -scale-x-100" // Mirror effect
+              className="w-full h-full object-cover transform -scale-x-100"
             />
             
-           {/* Face Guide Overlay */}
-<div
-  className={`absolute inset-0 pointer-events-none flex items-center justify-center transition-colors duration-300 ${
-    isAligned ? 'text-green-400' : 'text-white'
-  }`}
->
-  <svg
-    viewBox="0 0 100 100"
-    className="w-[90%] h-[70%] md:w-[40%] md:h-[50%] lg:w-[35%] lg:h-[45%] opacity-60 stroke-current stroke-[0.5] fill-none transition-all duration-300"
-  >
-    {/* Simple oval shape for face guide */}
-    <ellipse
-      cx="50"
-      cy="50"
-      rx="35"
-      ry="45"
-      strokeDasharray="4 2"
-      className={isAligned ? 'stroke-[1]' : ''}
-    />
-    {/* Crosshair for eyes/nose alignment */}
-    <line x1="50" y1="20" x2="50" y2="80" strokeDasharray="2 2" />
-    <line x1="30" y1="45" x2="70" y2="45" strokeDasharray="2 2" />
-  </svg>
-</div>
-
+            {/* Face Guide Overlay */}
+            <div
+              className={`absolute inset-0 pointer-events-none flex items-center justify-center transition-all duration-300 ${
+                isAligned ? 'scale-105' : 'scale-100'
+              }`}
+            >
+              <svg
+                viewBox="0 0 100 100"
+                className={`w-[85%] h-[65%] md:w-[40%] md:h-[50%] lg:w-[35%] lg:h-[45%] transition-all duration-300 ${
+                  isAligned 
+                    ? 'stroke-green-400 stroke-[1.5] drop-shadow-[0_0_10px_rgba(74,222,128,0.5)]' 
+                    : 'stroke-white/50 stroke-[0.5]'
+                } fill-none`}
+              >
+                <ellipse cx="50" cy="50" rx="35" ry="45" strokeDasharray={isAligned ? "0" : "4 2"} />
+                {!isAligned && (
+                  <>
+                    <line x1="50" y1="20" x2="50" y2="80" strokeDasharray="2 2" />
+                    <line x1="30" y1="45" x2="70" y2="45" strokeDasharray="2 2" />
+                  </>
+                )}
+              </svg>
+              
+              {isAligned && !countdown && (
+                 <div className="absolute mt-64 bg-green-500/20 backdrop-blur-md px-4 py-2 rounded-full border border-green-500/30 text-green-300 text-sm font-medium animate-pulse">
+                    Hold Still
+                 </div>
+              )}
+            </div>
 
             {/* Countdown Overlay */}
             {countdown && (
-              <div className="absolute inset-0 flex items-center justify-center z-20">
+              <div className="absolute inset-0 flex items-center justify-center z-20 bg-black/20 backdrop-blur-[2px]">
                 <div className="text-9xl font-bold text-white animate-ping">
                   {countdown}
                 </div>
@@ -268,7 +287,7 @@ export const CameraView: React.FC = () => {
         )}
       </div>
 
-      {/* Controls with safe area */}
+      {/* Controls */}
       <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-10 flex justify-center items-center pb-safe-bottom bg-gradient-to-t from-black/90 to-transparent">
         {tempImage ? (
           <div className="flex gap-8">
@@ -302,7 +321,6 @@ export const CameraView: React.FC = () => {
         )}
       </div>
 
-      {/* Hidden Canvas for capture */}
       <canvas ref={canvasRef} className="hidden" />
     </div>
   );

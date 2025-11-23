@@ -79,10 +79,20 @@ export const analyzeFaceWithGemini = async (imageBase64: string): Promise<Analys
     // Clean up any markdown code blocks if present
     const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
     
-    return JSON.parse(cleanText) as AnalysisResult;
+    const parsed = JSON.parse(cleanText) as AnalysisResult;
+
+    // Basic validation
+    if (!parsed.faceShape || !parsed.recommendations || !Array.isArray(parsed.recommendations)) {
+      throw new Error("Invalid response structure from AI");
+    }
+
+    return parsed;
   } catch (error) {
     console.error("Gemini Analysis Error:", error);
-    throw new Error("Failed to analyze face. Please try again.");
+    if ((error as Error).message.includes("API Key")) {
+        throw error;
+    }
+    throw new Error("Failed to analyze face. Please try again or check your internet connection.");
   }
 };
 

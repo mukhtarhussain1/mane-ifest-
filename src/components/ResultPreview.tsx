@@ -12,18 +12,43 @@ export const ResultPreview: React.FC = () => {
   const [showDetailsSheet, setShowDetailsSheet] = useState(false);
   const [showOriginal, setShowOriginal] = useState(false); // For comparison
 
+  const [error, setError] = useState<string | null>(null);
+
   // Reset generated result when selection changes
   useEffect(() => {
     setGeneratedResult(null);
     setShowDetailsSheet(false);
+    setError(null);
   }, [selectedHairstyleId, setGeneratedResult]);
 
   const handleGenerate = async () => {
-    if (!capturedImage || !selectedHairstyleId || !analysisResult) return;
+    console.log("Generate button clicked");
+    setError(null);
+
+    if (!capturedImage) {
+      console.error("No captured image");
+      setError("Missing image data");
+      return;
+    }
+    if (!selectedHairstyleId) {
+      console.error("No hairstyle selected");
+      setError("Please select a hairstyle");
+      return;
+    }
+    if (!analysisResult) {
+      console.error("No analysis result");
+      setError("Analysis data missing");
+      return;
+    }
 
     const selectedStyle = analysisResult.recommendations.find(r => r.id === selectedHairstyleId);
-    if (!selectedStyle) return;
+    if (!selectedStyle) {
+      console.error("Selected style not found in recommendations");
+      setError("Invalid style selection");
+      return;
+    }
 
+    console.log("Starting generation for:", selectedStyle.name);
     setIsGenerating(true);
     try {
       const result = await generateHairstyleDetails(
@@ -31,10 +56,12 @@ export const ResultPreview: React.FC = () => {
         selectedStyle.name, 
         analysisResult
       );
+      console.log("Generation result:", result);
       setGeneratedResult(result);
       setShowDetailsSheet(true);
-    } catch (error) {
-      console.error("Generation failed", error);
+    } catch (err) {
+      console.error("Generation failed", err);
+      setError("Failed to generate look. Please try again.");
     } finally {
       setIsGenerating(false);
     }
@@ -47,14 +74,14 @@ export const ResultPreview: React.FC = () => {
   return (
     <div className="fixed inset-0 bg-black flex flex-col font-sans safe-area-inset">
       {/* Header - Minimalist with safe area */}
-      <div className="absolute top-0 left-0 right-0 p-4 pt-safe-top sm:pt-12 flex justify-between items-center z-20 bg-gradient-to-b from-black/80 to-transparent backdrop-blur-sm">
+      <div className="absolute top-0 left-0 right-0 p-4 pt-safe-top sm:pt-12 flex justify-between items-center z-50 bg-gradient-to-b from-black/80 to-transparent backdrop-blur-sm pointer-events-none">
         <button 
           onClick={() => setStep('camera')}
-          className="p-3 sm:p-2 rounded-full bg-black/30 backdrop-blur-md border border-white/10 text-white hover:bg-black/50 active:scale-95 transition-all min-w-[44px] min-h-[44px] flex items-center justify-center"
+          className="p-3 sm:p-2 rounded-full bg-black/30 backdrop-blur-md border border-white/10 text-white hover:bg-black/50 active:scale-95 transition-all min-w-[44px] min-h-[44px] flex items-center justify-center pointer-events-auto"
         >
           <ArrowLeft size={24} />
         </button>
-        <div className="flex gap-3">
+        <div className="flex gap-3 pointer-events-auto">
           {generatedResult && (
             <>
               {/* Compare Button */}
@@ -95,15 +122,20 @@ export const ResultPreview: React.FC = () => {
                       const file = new File([blob], 'mane-ifest-style.png', { type: 'image/png' });
 
                       if (navigator.share) {
-                        await navigator.share({
-                          title: 'My New Look with Mane-ifest',
-                          text: `Check out this ${selectedStyleName} hairstyle!`,
-                          files: [file]
-                        });
+                        try {
+                          await navigator.share({
+                            title: 'My New Look with Mane-ifest',
+                            text: `Check out this ${selectedStyleName} hairstyle!`,
+                            files: [file]
+                          });
+                        } catch (shareError) {
+                          if ((shareError as Error).name !== 'AbortError') {
+                             console.error("Share failed:", shareError);
+                          }
+                        }
                       } else {
                         // Fallback: Copy to clipboard or just alert
-                        // For simplicity in this demo:
-                        alert("Sharing is not supported on this device/browser. Image downloaded instead.");
+                        alert("Image downloaded! You can share it from your gallery.");
                         // Trigger download as fallback
                         const link = document.createElement('a');
                         link.href = generatedResult.image;
@@ -129,20 +161,32 @@ export const ResultPreview: React.FC = () => {
       <div className="relative flex-1 w-full h-full bg-gray-900 overflow-hidden">
         {/* Blurred Background Layer */}
         <div 
-          className="absolute inset-0 bg-cover bg-center blur-3xl opacity-50 scale-110"
+          className="absolute inset-0 bg-cover bg-center blur-3xl opacity-50 scale-110 transition-all duration-500"
           style={{ backgroundImage: `url(${showOriginal ? capturedImage : (generatedResult?.image || capturedImage)})` }}
         />
         
-        {/* Main Image - Contain to prevent cropping */}
-        <img 
-          src={showOriginal ? capturedImage : (generatedResult?.image || capturedImage)} 
-          alt="Result" 
-          className={`relative w-full h-full object-contain z-10 transition-all duration-700 ${isGenerating ? 'scale-105 blur-lg opacity-50' : 'scale-100 opacity-100'}`}
-        />
+        {/* Main Image Container */}
+        <div className="relative w-full h-full">
+           {/* Original Image (Always rendered, z-index controlled or opacity) */}
+           <img 
+             src={capturedImage}
+             alt="Original"
+             className={`absolute inset-0 w-full h-full object-contain transition-opacity duration-300 ${showOriginal || !generatedResult ? 'opacity-100 z-20' : 'opacity-0 z-10'}`}
+           />
+           
+           {/* Generated Image */}
+           {generatedResult && (
+             <img 
+               src={generatedResult.image}
+               alt="Generated"
+               className={`absolute inset-0 w-full h-full object-contain transition-opacity duration-300 ${showOriginal ? 'opacity-0 z-10' : 'opacity-100 z-20'}`}
+             />
+           )}
+        </div>
         
         {/* Loading State */}
         {isGenerating && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center z-30">
+          <div className="absolute inset-0 flex flex-col items-center justify-center z-30 bg-black/60 backdrop-blur-sm">
             <div className="relative">
               <div className="absolute inset-0 bg-cyan-500 blur-xl opacity-20 animate-pulse" />
               <Sparkles size={48} className="text-cyan-400 animate-spin-slow" />
@@ -155,7 +199,7 @@ export const ResultPreview: React.FC = () => {
         )}
 
         {/* Call to Action Overlay */}
-        {!generatedResult && !isGenerating && selectedStyleName && (
+        {!generatedResult && !isGenerating && selectedStyleName && !error && (
           <div className="absolute bottom-40 left-0 right-0 flex justify-center z-10 pointer-events-none">
              <div className="px-6 py-3 bg-black/40 backdrop-blur-md rounded-full border border-white/10 animate-bounce-slow">
                 <p className="text-white text-sm font-medium flex items-center gap-2">
@@ -165,13 +209,22 @@ export const ResultPreview: React.FC = () => {
              </div>
           </div>
         )}
+
+        {/* Error Message */}
+        {error && (
+          <div className="absolute bottom-32 left-0 right-0 flex justify-center z-30 pointer-events-none">
+            <div className="px-6 py-3 bg-red-500/80 backdrop-blur-md rounded-full border border-red-400/30 shadow-lg">
+              <p className="text-white text-sm font-bold">{error}</p>
+            </div>
+          </div>
+        )}
         
         {/* Generation Button - Positioned higher to avoid overlap with selector */}
         {!isGenerating && !generatedResult && selectedHairstyleId && (
-          <div className="absolute bottom-5 left-0 right-0 flex justify-center z-30 px-6">
+          <div className="absolute bottom-36 left-0 right-0 flex justify-center z-30 px-6 pointer-events-none">
             <button 
               onClick={handleGenerate}
-              className="w-full max-w-xs group flex items-center justify-center gap-3 px-8 py-4 bg-white text-black font-bold rounded-full shadow-[0_0_40px_rgba(255,255,255,0.3)] hover:scale-105 transition-all active:scale-95"
+              className="w-full max-w-xs group flex items-center justify-center gap-3 px-8 py-4 bg-white text-black font-bold rounded-full shadow-[0_0_40px_rgba(255,255,255,0.3)] hover:scale-105 transition-all active:scale-95 pointer-events-auto"
             >
               <Wand2 size={20} className="group-hover:rotate-12 transition-transform" />
               <span className="tracking-wide">GENERATE LOOK</span>

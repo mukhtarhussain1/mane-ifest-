@@ -8,7 +8,7 @@ function App() {
   const { currentStep } = useAppStore();
 
   return (
-    <div className="min-h-screen bg-black text-white font-sans antialiased overflow-hidden">
+    <div className="min-h-dvh bg-black text-white font-sans antialiased overflow-hidden">
       {currentStep === 'home' && <WelcomeScreen />}
       {currentStep === 'camera' && <CameraView />}
       {currentStep === 'analyzing' && <AnalysisOverlay />}
