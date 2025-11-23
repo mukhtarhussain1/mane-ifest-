@@ -125,10 +125,7 @@ export const CameraView: React.FC = () => {
             if (alignmentFramesRef.current === 30) { // ~3 seconds of alignment (at 10fps)
                setCountdown(3);
             } else if (alignmentFramesRef.current > 30) {
-               // Countdown logic
-               // Since we throttled to 10fps, 10 frames = 1 second
                const framesSinceTrigger = alignmentFramesRef.current - 30;
-               
                if (framesSinceTrigger === 10) setCountdown(2);
                if (framesSinceTrigger === 20) setCountdown(1);
                if (framesSinceTrigger === 30) {
@@ -213,12 +210,12 @@ export const CameraView: React.FC = () => {
       <div className="absolute top-0 left-0 right-0 p-4 sm:p-6 pt-safe-top flex justify-between items-center z-10">
         <button 
           onClick={handleClose}
-          className="p-3 sm:p-2 rounded-full bg-black/30 backdrop-blur-md text-white hover:bg-black/50 active:scale-95 transition-all min-w-[44px] min-h-[44px] flex items-center justify-center"
+          className="glass-button p-3 rounded-full text-white hover:bg-white/10 active:scale-95 transition-all min-w-[44px] min-h-[44px] flex items-center justify-center"
         >
           <X size={24} />
         </button>
-        <div className="text-white/90 text-sm sm:text-base font-semibold tracking-wide uppercase">
-          {tempImage ? "Review Photo" : "Align Your Face"}
+        <div className="glass-panel px-4 py-1.5 rounded-full text-white/90 text-xs font-semibold tracking-widest uppercase backdrop-blur-md border-white/5">
+          {tempImage ? "Review" : "Align Face"}
         </div>
         <div className="w-10" />
       </div>
@@ -247,29 +244,23 @@ export const CameraView: React.FC = () => {
             
             {/* Face Guide Overlay */}
             <div
-              className={`absolute inset-0 pointer-events-none flex items-center justify-center transition-all duration-300 ${
+              className={`absolute inset-0 pointer-events-none flex items-center justify-center transition-all duration-500 ${
                 isAligned ? 'scale-105' : 'scale-100'
               }`}
             >
-              <svg
-                viewBox="0 0 100 100"
-                className={`w-[85%] h-[65%] md:w-[40%] md:h-[50%] lg:w-[35%] lg:h-[45%] transition-all duration-300 ${
-                  isAligned 
-                    ? 'stroke-green-400 stroke-[1.5] drop-shadow-[0_0_10px_rgba(74,222,128,0.5)]' 
-                    : 'stroke-white/50 stroke-[0.5]'
-                } fill-none`}
-              >
-                <ellipse cx="50" cy="50" rx="35" ry="45" strokeDasharray={isAligned ? "0" : "4 2"} />
-                {!isAligned && (
-                  <>
-                    <line x1="50" y1="20" x2="50" y2="80" strokeDasharray="2 2" />
-                    <line x1="30" y1="45" x2="70" y2="45" strokeDasharray="2 2" />
-                  </>
-                )}
-              </svg>
+              <div className={`relative w-[85%] h-[65%] md:w-[40%] md:h-[50%] lg:w-[35%] lg:h-[45%] transition-all duration-500`}>
+                {/* Corner Brackets */}
+                <div className={`absolute top-0 left-0 w-12 h-12 border-t-2 border-l-2 rounded-tl-3xl transition-colors duration-300 ${isAligned ? 'border-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.5)]' : 'border-white/30'}`} />
+                <div className={`absolute top-0 right-0 w-12 h-12 border-t-2 border-r-2 rounded-tr-3xl transition-colors duration-300 ${isAligned ? 'border-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.5)]' : 'border-white/30'}`} />
+                <div className={`absolute bottom-0 left-0 w-12 h-12 border-b-2 border-l-2 rounded-bl-3xl transition-colors duration-300 ${isAligned ? 'border-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.5)]' : 'border-white/30'}`} />
+                <div className={`absolute bottom-0 right-0 w-12 h-12 border-b-2 border-r-2 rounded-br-3xl transition-colors duration-300 ${isAligned ? 'border-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.5)]' : 'border-white/30'}`} />
+                
+                {/* Center Ellipse (Subtle) */}
+                <div className={`absolute inset-4 border border-dashed rounded-[45%] transition-colors duration-300 ${isAligned ? 'border-cyan-400/30' : 'border-white/10'}`} />
+              </div>
               
               {isAligned && !countdown && (
-                 <div className="absolute mt-64 bg-green-500/20 backdrop-blur-md px-4 py-2 rounded-full border border-green-500/30 text-green-300 text-sm font-medium animate-pulse">
+                 <div className="absolute mt-64 glass-panel px-6 py-2 rounded-full text-cyan-300 text-sm font-bold tracking-widest uppercase animate-pulse shadow-[0_0_30px_rgba(34,211,238,0.2)]">
                     Hold Still
                  </div>
               )}
@@ -277,8 +268,8 @@ export const CameraView: React.FC = () => {
 
             {/* Countdown Overlay */}
             {countdown && (
-              <div className="absolute inset-0 flex items-center justify-center z-20 bg-black/20 backdrop-blur-[2px]">
-                <div className="text-9xl font-bold text-white animate-ping">
+              <div className="absolute inset-0 flex items-center justify-center z-20 bg-black/40 backdrop-blur-sm">
+                <div className="text-[12rem] font-black text-transparent bg-clip-text bg-gradient-to-b from-white to-white/0 animate-ping">
                   {countdown}
                 </div>
               </div>
@@ -288,35 +279,36 @@ export const CameraView: React.FC = () => {
       </div>
 
       {/* Controls */}
-      <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-10 flex justify-center items-center pb-safe-bottom bg-gradient-to-t from-black/90 to-transparent">
+      <div className="absolute bottom-0 left-0 right-0 p-8 sm:p-12 flex justify-center items-center pb-safe-bottom bg-gradient-to-t from-black via-black/80 to-transparent">
         {tempImage ? (
-          <div className="flex gap-8">
+          <div className="flex gap-12 items-center">
              <button
               onClick={handleRetake}
-              className="flex flex-col items-center gap-2 sm:gap-3 text-white/80 hover:text-white transition-colors active:scale-95 min-w-[80px]"
+              className="group flex flex-col items-center gap-3 text-white/60 hover:text-white transition-colors"
             >
-              <div className="w-16 h-16 sm:w-14 sm:h-14 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20 hover:bg-white/20 transition-all">
-                <RotateCcw size={24} />
+              <div className="w-14 h-14 rounded-full glass-button flex items-center justify-center group-hover:bg-white/20">
+                <RotateCcw size={20} />
               </div>
-              <span className="text-xs font-medium uppercase tracking-wider">Retake</span>
+              <span className="text-[10px] font-bold uppercase tracking-widest">Retake</span>
             </button>
             
             <button
               onClick={handleConfirm}
-              className="flex flex-col items-center gap-2 sm:gap-3 text-cyan-400 hover:text-cyan-300 transition-colors active:scale-95 min-w-[80px]"
+              className="group flex flex-col items-center gap-3 text-cyan-400 hover:text-cyan-300 transition-colors"
             >
-              <div className="w-20 h-20 sm:w-16 sm:h-16 rounded-full bg-cyan-500/20 backdrop-blur-md flex items-center justify-center border-2 border-cyan-500/50 shadow-[0_0_25px_rgba(6,182,212,0.4)] hover:shadow-[0_0_35px_rgba(6,182,212,0.6)] transition-all">
-                <Check size={36} className="sm:size-32" />
+              <div className="w-20 h-20 rounded-full bg-cyan-500/20 backdrop-blur-xl flex items-center justify-center border border-cyan-500/50 shadow-[0_0_40px_rgba(34,211,238,0.3)] group-hover:scale-105 transition-all duration-300">
+                <Check size={32} />
               </div>
-              <span className="text-xs font-medium uppercase tracking-wider">Use Photo</span>
+              <span className="text-[10px] font-bold uppercase tracking-widest">Confirm</span>
             </button>
           </div>
         ) : (
           <button
             onClick={captureImage}
-            className={`w-20 h-20 sm:w-20 sm:h-20 rounded-full border-4 flex items-center justify-center backdrop-blur-sm transition-all active:scale-95 ${isAligned ? 'border-green-400 bg-green-400/20 shadow-[0_0_30px_rgba(74,222,128,0.4)]' : 'border-white bg-white/20 hover:bg-white/30'}`}
+            className={`group relative w-24 h-24 rounded-full flex items-center justify-center transition-all duration-300 ${isAligned ? 'scale-110' : 'scale-100'}`}
           >
-            <div className={`w-16 h-16 rounded-full transition-colors ${isAligned ? 'bg-green-400' : 'bg-white'}`} />
+            <div className={`absolute inset-0 rounded-full border-[6px] transition-colors duration-300 ${isAligned ? 'border-cyan-400 shadow-[0_0_40px_rgba(34,211,238,0.4)]' : 'border-white/30'}`} />
+            <div className={`w-18 h-18 rounded-full transition-all duration-300 ${isAligned ? 'bg-cyan-400 scale-90' : 'bg-white scale-75 group-hover:scale-90'}`} />
           </button>
         )}
       </div>
