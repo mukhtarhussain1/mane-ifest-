@@ -3,6 +3,7 @@ import { WelcomeScreen } from './components/WelcomeScreen';
 import { CameraView } from './components/CameraView';
 import { AnalysisOverlay } from './components/AnalysisOverlay';
 import { ResultPreview } from './components/ResultPreview';
+import { GenderRestrictionMessage } from './components/GenderRestrictionMessage';
 import { Smartphone } from 'lucide-react';
 
 function App() {
@@ -14,6 +15,7 @@ function App() {
       case 'camera': return <CameraView />;
       case 'analyzing': return <AnalysisOverlay />;
       case 'results': return <ResultPreview />;
+      case 'gender-restriction': return <GenderRestrictionMessage />;
       default: return <WelcomeScreen />;
     }
   };

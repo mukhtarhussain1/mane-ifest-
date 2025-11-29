@@ -32,7 +32,13 @@ export const AnalysisOverlay: React.FC = () => {
 
         setProgress(100);
         setAnalysisResult(result);
-        setStep('results');
+
+        // Check for gender restriction
+        if (result.gender?.toLowerCase() === 'female') {
+          setStep('gender-restriction');
+        } else {
+          setStep('results');
+        }
       } catch (err) {
         console.error(err);
         setError('Analysis failed. Please check your API key and try again.');

@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import type { AnalysisResult } from '../services/gemini';
 
-export type AppStep = 'home' | 'camera' | 'analyzing' | 'results';
+export type AppStep = 'home' | 'camera' | 'analyzing' | 'results' | 'gender-restriction';
 
 interface AppState {
   currentStep: AppStep;
